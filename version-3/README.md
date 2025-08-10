@@ -5,8 +5,6 @@ It builds on **v2** by using **Docker named volumes** instead of bind mounts for
 
 With this version, tasks are saved to a Docker named volume, providing **decoupled persistent storage** that survives container restarts and removal without being tied to the host filesystem structure.
 
----
-
 ## Features
 - All features from **v1** and **v2**:
   - Add, view, and delete tasks.
@@ -19,8 +17,6 @@ With this version, tasks are saved to a Docker named volume, providing **decoupl
   - Storage is decoupled from host working directory.
   - Easier volume management with Docker commands.
   - Robust directory creation on application startup.
-
----
 
 ## Why Named Volumes?
 
@@ -35,8 +31,6 @@ With this version, tasks are saved to a Docker named volume, providing **decoupl
 
 Named volumes decouple your application's persistent data from the current working directory, making deployment more flexible and robust.
 
----
-
 ## Tech Stack
 - **Python 3.x**
 - **Flask** — lightweight web framework.
@@ -44,8 +38,6 @@ Named volumes decouple your application's persistent data from the current worki
 - **Docker** — containerization platform.
 - **JSON** — simple file-based storage format.
 - **Docker Named Volumes** — persistent storage managed by Docker.
-
----
 
 ## Running Locally (without Docker)
 ```bash
@@ -59,8 +51,6 @@ python app.py
 
 Then open [http://localhost:5000](http://localhost:5000) in your browser.
 Data will be stored in `./data/todos.json`.
-
----
 
 ## Running in Docker with Named Volume
 
@@ -81,8 +71,6 @@ Data will be stored in `./data/todos.json`.
 
 4. **Access the app:**
    Open [http://localhost:5000](http://localhost:5000) in your browser.
-
----
 
 ## Volume Management Commands
 
@@ -111,8 +99,6 @@ docker run --rm -v todos_data:/data -v $(pwd):/backup alpine tar czf /backup/tod
 docker run --rm -v todos_data:/data -v $(pwd):/backup alpine tar xzf /backup/todos_backup.tar.gz -C /data
 ```
 
----
-
 ## Testing Persistence
 
 To verify that data persists across container lifecycle:
@@ -131,16 +117,12 @@ To verify that data persists across container lifecycle:
 
 The data persists because it's stored in the named volume, not in the container's filesystem.
 
----
-
 ## Learning Objectives
 
 * Learn the difference between **bind mounts** and **named volumes**
 * Understand how **named volumes** provide location-independent persistence
 * Practice Docker volume management commands
 * Experience how persistent data survives complete container removal and recreation
-
----
 
 ## Environment Variables
 

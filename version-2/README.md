@@ -5,8 +5,6 @@ It builds on **v1** by adding **local data persistence** using a JSON file and D
 
 With this version, tasks are saved to a file on the host machine so they **survive container restarts** (as long as you use the same bind mount).
 
----
-
 ## Features
 - All features from **v1**:
   - Add, view, and delete tasks.
@@ -17,14 +15,10 @@ With this version, tasks are saved to a file on the host machine so they **survi
   - Data persists between container restarts if a bind mount is used.
   - Configurable file path via `TODO_FILE` environment variable (default: `/app/data/todos.json`).
 
----
-
 ## Why this version persists data
 By default, Docker stores container data inside its writable layer, which is **destroyed when the container is removed**.  
 In this version, we **mount a host directory into the container** so that the application writes to a file on the host.  
 This allows the data to outlive the container lifecycle.
-
----
 
 ## Tech Stack
 - **Python 3.x**
@@ -32,8 +26,6 @@ This allows the data to outlive the container lifecycle.
 - **Tailwind CSS** — modern utility-first CSS framework (loaded via CDN).
 - **Docker** — containerization platform.
 - **JSON** — simple file-based storage format.
-
----
 
 ## Running Locally (without Docker)
 ```bash
@@ -48,8 +40,6 @@ python app.py
 Then open [http://localhost:5000](http://localhost:5000) in your browser.
 Data will be stored in `./data/todos.json`.
 
----
-
 ## Running in Docker with Persistence
 
 1. **Create a directory for data:**
@@ -61,7 +51,7 @@ Data will be stored in `./data/todos.json`.
 2. **Build the image:**
 
    ```bash
-   docker build -t todo-v2 .
+   docker build -t simple-todo:v2 .
    ```
 
 3. **Run the container with a bind mount:**
@@ -69,21 +59,17 @@ Data will be stored in `./data/todos.json`.
    ```bash
    docker run -p 5000:5000 \
      -v $(pwd)/data:/app/data \
-     todo-v2
+     simple-todo:v2
    ```
 
 4. **Access the app:**
    Open [http://localhost:5000](http://localhost:5000) in your browser.
-
----
 
 ## Learning Objectives
 
 * Learn how to use **bind mounts** in Docker to persist data between container restarts.
 * Understand how a container can interact with files on the host system.
 * Practice configuring applications with **environment variables** for flexible file paths.
-
----
 
 ## Next Steps
 

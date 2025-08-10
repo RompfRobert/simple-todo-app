@@ -5,8 +5,6 @@ It builds on **v3** by implementing a **production-ready multi-stage Docker buil
 
 With this version, the app runs behind Gunicorn for better performance and uses a multi-stage build to create smaller, more secure production images.
 
----
-
 ## Features
 - All features from **v1**, **v2**, and **v3**:
   - Add, view, and delete tasks.
@@ -20,8 +18,6 @@ With this version, the app runs behind Gunicorn for better performance and uses 
   - **Pre-built wheels** for faster container startup.
   - **Production-optimized** configuration.
 
----
-
 ## Why Multi-stage Builds?
 
 **Multi-stage builds** provide several production benefits:
@@ -33,8 +29,6 @@ With this version, the app runs behind Gunicorn for better performance and uses 
 - **Separation**: Clear separation between build and runtime environments
 
 The builder stage creates optimized wheels, while the production stage uses only what's needed to run the app.
-
----
 
 ## Why Gunicorn?
 
@@ -48,8 +42,6 @@ The builder stage creates optimized wheels, while the production stage uses only
 
 Configuration: `gunicorn -w 2 -k gthread --threads 4 -b 0.0.0.0:5000 app:app`
 
----
-
 ## Tech Stack
 - **Python 3.12** — Latest stable Python version
 - **Flask** — Lightweight web framework
@@ -58,8 +50,6 @@ Configuration: `gunicorn -w 2 -k gthread --threads 4 -b 0.0.0.0:5000 app:app`
 - **Docker Multi-stage** — Optimized container builds
 - **JSON** — Simple file-based storage format
 - **Docker Named Volumes** — Persistent storage managed by Docker
-
----
 
 ## Running Locally (without Docker)
 ```bash
@@ -76,8 +66,6 @@ gunicorn -w 2 -k gthread --threads 4 -b 0.0.0.0:5000 app:app
 ```
 
 Then open [http://localhost:5000](http://localhost:5000) in your browser.
-
----
 
 ## Running in Docker (Production)
 
@@ -98,8 +86,6 @@ Then open [http://localhost:5000](http://localhost:5000) in your browser.
 
 4. **Access the app:**
    Open [http://localhost:5000](http://localhost:5000) in your browser.
-
----
 
 ## Verifying Production Setup
 
@@ -123,8 +109,6 @@ docker exec <container-id> ps aux
 ```
 
 You should see Gunicorn master and worker processes.
-
----
 
 ## Volume Management Commands
 
@@ -153,8 +137,6 @@ docker run --rm -v todos_data:/data -v $(pwd):/backup alpine tar czf /backup/tod
 docker run --rm -v todos_data:/data -v $(pwd):/backup alpine tar xzf /backup/todos_backup.tar.gz -C /data
 ```
 
----
-
 ## Production Deployment
 
 For production deployment, consider:
@@ -180,8 +162,6 @@ docker run -d \
   simple-todo:v4
 ```
 
----
-
 ## Testing Persistence
 
 To verify that data persists across container lifecycle:
@@ -198,8 +178,6 @@ To verify that data persists across container lifecycle:
    ```
 4. **Verify your tasks are still there**
 
----
-
 ## Learning Objectives
 
 * Learn **multi-stage Docker builds** for production optimization
@@ -207,8 +185,6 @@ To verify that data persists across container lifecycle:
 * Practice using **Gunicorn** as a production WSGI server
 * Experience **Docker image size optimization** techniques
 * Implement **security best practices** with non-root users
-
----
 
 ## Environment Variables
 
@@ -224,8 +200,6 @@ docker run -p 5000:5000 \
   -e GUNICORN_WORKERS=3 \
   simple-todo:v4
 ```
-
----
 
 ## Image Size Comparison
 
