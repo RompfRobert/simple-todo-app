@@ -17,3 +17,7 @@ README.md
 *.swp
 *.swo
 *~
+.env
+.env.example
+docker-compose.yml
+docker-compose.override.yml
