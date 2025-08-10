@@ -1,0 +1,6 @@
+/* Empty CSS file for static serving demo */
+/* This file demonstrates static file serving through Caddy */
+
+body {
+    font-family: system-ui, -apple-system, sans-serif;
+}
