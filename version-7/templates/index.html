@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Simple To-Do</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-100 min-h-screen">
+    <div class="max-w-xl mx-auto p-6">
+      <h1 class="text-2xl font-bold mb-4">Simple To-Do</h1>
+
+      <form action="/add" method="post" class="flex gap-2 mb-6">
+        <input name="task" type="text" placeholder="Add a new task"
+               class="flex-1 px-3 py-2 border rounded focus:outline-none focus:ring" required>
+        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Add</button>
+      </form>
+
+      <div class="bg-white rounded shadow">
+        <ul class="divide-y">
+          {% if tasks %}
+            {% for task in tasks %}
+              <li class="flex items-center justify-between p-3">
+                <span class="truncate">{{ loop.index }}. {{ task }}</span>
+                <form action="/delete/{{ loop.index0 }}" method="post">
+                  <button type="submit" class="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700">
+                    Delete
+                  </button>
+                </form>
+              </li>
+            {% endfor %}
+          {% else %}
+            <li class="p-3 text-gray-500">No tasks yet. Add your first one above.</li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+  </body>
+</html>
