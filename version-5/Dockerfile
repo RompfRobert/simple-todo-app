@@ -57,7 +57,7 @@ RUN pip install --no-cache-dir --no-compile -r requirements.txt \
     rm -rf /wheels requirements.txt
 
 # Copy application code with proper ownership
-COPY --chown=10001:10001 version-5/ /app/
+COPY --chown=10001:10001 . /app/
 
 # Create data directory with proper ownership
 RUN mkdir -p /app/data && \
