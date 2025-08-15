@@ -51,13 +51,10 @@ WORKDIR /app
 COPY --from=builder /wheels /wheels
 COPY requirements.txt .
 
-# Install dependencies from pre-built wheels
+# Install dependencies from pre-built wheels and remove temporary files
 RUN pip install --no-cache-dir --no-compile -r requirements.txt \
     --no-index --find-links /wheels && \
     rm -rf /wheels requirements.txt
-
-# Install requirements.txt to ensure Celery and Redis Python client are present
-RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code with proper ownership
 COPY --chown=10001:10001 . /app/

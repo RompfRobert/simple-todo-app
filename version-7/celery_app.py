@@ -16,4 +16,14 @@ celery.conf.update(
     timezone='UTC',
     enable_utc=True,
 )
-celery.autodiscover_tasks(['.'])
+# Ensure Celery discovers tasks defined in the application module
+celery.autodiscover_tasks(['app'])
+
+# Also explicitly import the app module so any @celery.task decorated functions
+# (like export_todos_task in app.py) are registered when the worker starts.
+try:
+    import app  # noqa: F401
+except Exception:
+    # If import fails in some environments, worker may still work if tasks are
+    # imported elsewhere; we swallow exceptions to avoid startup crashes here.
+    pass

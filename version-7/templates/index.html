@@ -14,6 +14,7 @@
         <input name="task" type="text" placeholder="Add a new task"
                class="flex-1 px-3 py-2 border rounded focus:outline-none focus:ring" required>
         <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Add</button>
+  <button id="export-btn" type="button" onclick="startExport()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Export CSV</button>
       </form>
 
       <div class="bg-white rounded shadow">
@@ -35,5 +36,49 @@
         </ul>
       </div>
     </div>
+    <div id="export-status" class="max-w-xl mx-auto p-2 text-sm text-gray-700"></div>
+    <script>
+      async function startExport() {
+        const btn = document.getElementById('export-btn');
+        const status = document.getElementById('export-status');
+        btn.disabled = true;
+        status.textContent = 'Starting export...';
+
+        try {
+          const res = await fetch('/export', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filters: {} }) });
+          if (!res.ok) throw new Error('Export request failed');
+          const data = await res.json();
+          const taskId = data.task_id;
+          status.textContent = 'Export started, task id ' + taskId + '. Waiting for completion...';
+
+          // Poll for status
+          let attempts = 0;
+          while (attempts < 120) { // ~2 minutes max
+            await new Promise(r => setTimeout(r, 1000));
+            const s = await fetch('/tasks/' + taskId);
+            if (!s.ok) { attempts++; continue; }
+            const js = await s.json();
+            status.textContent = 'Task ' + taskId + ' — ' + js.state;
+            if (js.state === 'SUCCESS') {
+              // Trigger download
+              window.location = '/download/' + taskId;
+              status.textContent = 'Download starting...';
+              break;
+            }
+            if (js.state === 'FAILURE') {
+              status.textContent = 'Export failed';
+              break;
+            }
+            attempts++;
+          }
+          if (attempts >= 120) status.textContent = 'Export timed out; try again later.';
+
+        } catch (err) {
+          status.textContent = 'Export error: ' + err.message;
+        } finally {
+          btn.disabled = false;
+        }
+      }
+    </script>
   </body>
 </html>

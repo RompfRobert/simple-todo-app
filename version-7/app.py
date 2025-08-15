@@ -131,9 +131,10 @@ def export_todos_task(self, filters=None):
         {'id': 1, 'title': 'Task 1', 'done': False},
         {'id': 2, 'title': 'Task 2', 'done': True},
     ]
-    # Write to temp CSV
-    temp_dir = tempfile.gettempdir()
-    csv_path = os.path.join(temp_dir, f'todos_export_{self.request.id}.csv')
+    # Write CSV into a shared exports directory so the web app can serve it
+    export_dir = os.environ.get('EXPORT_DIR', '/app/data/exports')
+    os.makedirs(export_dir, exist_ok=True)
+    csv_path = os.path.join(export_dir, f'todos_export_{self.request.id}.csv')
     with open(csv_path, 'w', newline='', encoding='utf-8') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=['id', 'title', 'done'])
         writer.writeheader()
