@@ -10,7 +10,7 @@ COPY ../requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy app code
-COPY version-1 /app
+COPY . /app
 
 EXPOSE 5000
 

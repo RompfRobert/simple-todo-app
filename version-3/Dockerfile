@@ -6,11 +6,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # Copy requirements and install
-COPY requirements.txt /app/requirements.txt
+COPY ../requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy app code
-COPY version-3/ /app/
+COPY . /app/
 
 # Create data directory (will be used by named volume)
 RUN mkdir -p /app/data

@@ -6,7 +6,7 @@ FROM python:slim AS builder
 WORKDIR /build
 
 # Copy requirements first to leverage Docker layer caching
-COPY requirements.txt .
+COPY ../requirements.txt .
 
 # Build wheels for all dependencies
 RUN pip wheel -r requirements.txt -w /wheels
@@ -28,7 +28,7 @@ LABEL org.opencontainers.image.title="Simple Todo App" \
       org.opencontainers.image.source="https://github.com/robertrompf/simple-todo-app" \
       org.opencontainers.image.licenses="GPL-3.0" \
       org.opencontainers.image.created="${BUILD_DATE}" \
-      org.opencontainers.image.authors="Robert Rompf <robert@rompf.dev>" \
+      org.opencontainers.image.authors="Robert Rompf <contact@rompf.dev>" \
       org.opencontainers.image.documentation="https://github.com/robertrompf/simple-todo-app/blob/main/README.md"
 
 # Environment variables
@@ -49,7 +49,7 @@ WORKDIR /app
 
 # Copy wheels from builder stage
 COPY --from=builder /wheels /wheels
-COPY requirements.txt .
+COPY ../requirements.txt .
 
 # Install dependencies from pre-built wheels
 RUN pip install --no-cache-dir --no-compile -r requirements.txt \
