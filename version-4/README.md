@@ -6,6 +6,7 @@ It builds on **v3** by implementing a **production-ready multi-stage Docker buil
 With this version, the app runs behind Gunicorn for better performance and uses a multi-stage build to create smaller, more secure production images.
 
 ## Features
+
 - All features from **v1**, **v2**, and **v3**:
   - Add, view, and delete tasks.
   - Tailwind CSS styling (via CDN).
@@ -14,7 +15,6 @@ With this version, the app runs behind Gunicorn for better performance and uses 
 - New in **v4**:
   - **Gunicorn WSGI server** instead of Flask development server.
   - **Multi-stage Docker build** for smaller production images.
-  - **Non-root user** for improved security.
   - **Pre-built wheels** for faster container startup.
   - **Production-optimized** configuration.
 
@@ -30,6 +30,9 @@ With this version, the app runs behind Gunicorn for better performance and uses 
 
 The builder stage creates optimized wheels, while the production stage uses only what's needed to run the app.
 
+> Why? It’s faster and avoids needing to compile packages again later.
+> Think of wheels as ready-to-install versions of your libraries.
+
 ## Why Gunicorn?
 
 **Gunicorn** is a production-grade WSGI server that offers:
@@ -43,7 +46,8 @@ The builder stage creates optimized wheels, while the production stage uses only
 Configuration: `gunicorn -w 2 -k gthread --threads 4 -b 0.0.0.0:5000 app:app`
 
 ## Tech Stack
-- **Python 3.12** — Latest stable Python version
+
+- **Python 3.x** — Latest stable Python version
 - **Flask** — Lightweight web framework
 - **Gunicorn** — Production WSGI server  
 - **Tailwind CSS** — Modern utility-first CSS framework (loaded via CDN)
@@ -52,6 +56,7 @@ Configuration: `gunicorn -w 2 -k gthread --threads 4 -b 0.0.0.0:5000 app:app`
 - **Docker Named Volumes** — Persistent storage managed by Docker
 
 ## Running Locally (without Docker)
+
 ```bash
 # Install dependencies
 pip install -r requirements.txt
@@ -70,16 +75,19 @@ Then open [http://localhost:5000](http://localhost:5000) in your browser.
 ## Running in Docker (Production)
 
 1. **Create a named volume:**
+
    ```bash
    docker volume create todos_data
    ```
 
 2. **Build the production image:**
+
    ```bash
    docker build -t simple-todo:v4 -f version-4/Dockerfile .
    ```
 
 3. **Run the container with named volume:**
+
    ```bash
    docker run -p 5000:5000 -v todos_data:/app/data simple-todo:v4
    ```
@@ -89,21 +97,24 @@ Then open [http://localhost:5000](http://localhost:5000) in your browser.
 
 ## Verifying Production Setup
 
-### Check that Gunicorn is serving the app:
+### Check that Gunicorn is serving the app
+
 ```bash
 curl -I http://localhost:5000
 ```
 
 You should see `Server: gunicorn` in the response headers.
 
-### Check container size comparison:
+### Check container size comparison
+
 ```bash
 docker images | grep simple-todo
 ```
 
 Version 4 should be smaller than previous versions due to multi-stage build optimization.
 
-### Check running processes inside container:
+### Check running processes inside container
+
 ```bash
 docker exec <container-id> ps aux
 ```
@@ -112,27 +123,32 @@ You should see Gunicorn master and worker processes.
 
 ## Volume Management Commands
 
-### List volumes:
+### List volumes
+
 ```bash
 docker volume ls
 ```
 
-### Inspect volume details:
+### Inspect volume details
+
 ```bash
 docker volume inspect todos_data
 ```
 
-### Remove the volume (deletes all data):
+### Remove the volume (deletes all data)
+
 ```bash
 docker volume rm todos_data
 ```
 
-### Backup volume data:
+### Backup volume data
+
 ```bash
 docker run --rm -v todos_data:/data -v $(pwd):/backup alpine tar czf /backup/todos_backup.tar.gz -C /data .
 ```
 
-### Restore volume data:
+### Restore volume data
+
 ```bash
 docker run --rm -v todos_data:/data -v $(pwd):/backup alpine tar xzf /backup/todos_backup.tar.gz -C /data
 ```
@@ -168,23 +184,26 @@ To verify that data persists across container lifecycle:
 
 1. **Start the app and add some tasks**
 2. **Stop and remove the container:**
+
    ```bash
    docker stop <container-id>
    docker rm <container-id>
    ```
+
 3. **Run a new container with the same volume:**
+
    ```bash
    docker run -p 5000:5000 -v todos_data:/app/data simple-todo:v4
    ```
+
 4. **Verify your tasks are still there**
 
 ## Learning Objectives
 
-* Learn **multi-stage Docker builds** for production optimization
-* Understand the difference between **development** and **production** servers
-* Practice using **Gunicorn** as a production WSGI server
-* Experience **Docker image size optimization** techniques
-* Implement **security best practices** with non-root users
+- Learn **multi-stage Docker builds** for production optimization
+- Understand the difference between **development** and **production** servers
+- Practice using **Gunicorn** as a production WSGI server
+- Experience **Docker image size optimization** techniques
 
 ## Environment Variables
 
@@ -193,6 +212,7 @@ To verify that data persists across container lifecycle:
 - `GUNICORN_THREADS`: Number of threads per worker (optional)
 
 Example with custom configuration:
+
 ```bash
 docker run -p 5000:5000 \
   -v todos_data:/app/data \
@@ -200,12 +220,3 @@ docker run -p 5000:5000 \
   -e GUNICORN_WORKERS=3 \
   simple-todo:v4
 ```
-
-## Image Size Comparison
-
-| Version | Server | Build Type | Approx Size |
-|---------|--------|------------|-------------|
-| v1-v3   | Flask dev | Single-stage | ~150-200MB |
-| v4      | Gunicorn | Multi-stage | ~120-150MB |
-
-Multi-stage builds typically reduce image size by 20-30% while improving security and performance.

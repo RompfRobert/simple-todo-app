@@ -6,6 +6,7 @@ It builds on **v1** by adding **local data persistence** using a JSON file and D
 With this version, tasks are saved to a file on the host machine so they **survive container restarts** (as long as you use the same bind mount).
 
 ## Features
+
 - All features from **v1**:
   - Add, view, and delete tasks.
   - Tailwind CSS styling (via CDN).
@@ -16,11 +17,13 @@ With this version, tasks are saved to a file on the host machine so they **survi
   - Configurable file path via `TODO_FILE` environment variable (default: `/app/data/todos.json`).
 
 ## Why this version persists data
+
 By default, Docker stores container data inside its writable layer, which is **destroyed when the container is removed**.  
 In this version, we **mount a host directory into the container** so that the application writes to a file on the host.  
 This allows the data to outlive the container lifecycle.
 
 ## Tech Stack
+
 - **Python 3.x**
 - **Flask** — lightweight web framework.
 - **Tailwind CSS** — modern utility-first CSS framework (loaded via CDN).
@@ -28,6 +31,7 @@ This allows the data to outlive the container lifecycle.
 - **JSON** — simple file-based storage format.
 
 ## Running Locally (without Docker)
+
 ```bash
 # Install dependencies
 pip install -r requirements.txt
@@ -67,9 +71,9 @@ Data will be stored in `./data/todos.json`.
 
 ## Learning Objectives
 
-* Learn how to use **bind mounts** in Docker to persist data between container restarts.
-* Understand how a container can interact with files on the host system.
-* Practice configuring applications with **environment variables** for flexible file paths.
+- Learn how to use **bind mounts** in Docker to persist data between container restarts.
+- Understand how a container can interact with files on the host system.
+- Practice configuring applications with **environment variables** for flexible file paths.
 
 ## Next Steps
 

@@ -6,6 +6,7 @@ It builds on **v2** by using **Docker named volumes** instead of bind mounts for
 With this version, tasks are saved to a Docker named volume, providing **decoupled persistent storage** that survives container restarts and removal without being tied to the host filesystem structure.
 
 ## Features
+
 - All features from **v1** and **v2**:
   - Add, view, and delete tasks.
   - Tailwind CSS styling (via CDN).
@@ -32,6 +33,7 @@ With this version, tasks are saved to a Docker named volume, providing **decoupl
 Named volumes decouple your application's persistent data from the current working directory, making deployment more flexible and robust.
 
 ## Tech Stack
+
 - **Python 3.x**
 - **Flask** — lightweight web framework.
 - **Tailwind CSS** — modern utility-first CSS framework (loaded via CDN).
@@ -40,6 +42,7 @@ Named volumes decouple your application's persistent data from the current worki
 - **Docker Named Volumes** — persistent storage managed by Docker.
 
 ## Running Locally (without Docker)
+
 ```bash
 # Install dependencies
 pip install -r requirements.txt
@@ -55,16 +58,19 @@ Data will be stored in `./data/todos.json`.
 ## Running in Docker with Named Volume
 
 1. **Create a named volume:**
+
    ```bash
    docker volume create todos_data
    ```
 
 2. **Build the image:**
+
    ```bash
    docker build -t simple-todo:v3 -f version-3/Dockerfile .
    ```
 
 3. **Run the container with the named volume:**
+
    ```bash
    docker run -p 5000:5000 -v todos_data:/app/data simple-todo:v3
    ```
@@ -74,27 +80,32 @@ Data will be stored in `./data/todos.json`.
 
 ## Volume Management Commands
 
-### List volumes:
+### List volumes
+
 ```bash
 docker volume ls
 ```
 
-### Inspect volume details:
+### Inspect volume details
+
 ```bash
 docker volume inspect todos_data
 ```
 
-### Remove the volume (deletes all data):
+### Remove the volume (deletes all data)
+
 ```bash
 docker volume rm todos_data
 ```
 
-### Backup volume data:
+### Backup volume data
+
 ```bash
 docker run --rm -v todos_data:/data -v $(pwd):/backup alpine tar czf /backup/todos_backup.tar.gz -C /data .
 ```
 
-### Restore volume data:
+### Restore volume data
+
 ```bash
 docker run --rm -v todos_data:/data -v $(pwd):/backup alpine tar xzf /backup/todos_backup.tar.gz -C /data
 ```
@@ -105,30 +116,39 @@ To verify that data persists across container lifecycle:
 
 1. **Start the app and add some tasks**
 2. **Stop and remove the container:**
+
    ```bash
    docker stop <container-id>
    docker rm <container-id>
    ```
+
 3. **Run a new container with the same volume:**
+
    ```bash
    docker run -p 5000:5000 -v todos_data:/app/data simple-todo:v3
    ```
+
 4. **Verify your tasks are still there**
 
 The data persists because it's stored in the named volume, not in the container's filesystem.
 
 ## Learning Objectives
 
-* Learn the difference between **bind mounts** and **named volumes**
-* Understand how **named volumes** provide location-independent persistence
-* Practice Docker volume management commands
-* Experience how persistent data survives complete container removal and recreation
+- Learn the difference between **bind mounts** and **named volumes**
+- Understand how **named volumes** provide location-independent persistence
+- Practice Docker volume management commands
+- Experience how persistent data survives complete container removal and recreation
 
 ## Environment Variables
 
 - `TODO_FILE`: Path to the JSON file (default: `/app/data/todos.json`)
 
 Example with custom path:
+
 ```bash
 docker run -p 5000:5000 -v todos_data:/app/storage -e TODO_FILE=/app/storage/my-todos.json simple-todo:v3
 ```
+
+## Next Steps
+
+In **v4**, we will introduce a production-ready setup with Gunicorn, multi-stage Docker builds, non-root user security, pre-built wheels, and optimized configuration for faster, safer deployment.
