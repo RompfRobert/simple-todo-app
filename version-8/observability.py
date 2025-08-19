@@ -25,7 +25,9 @@ from opentelemetry.instrumentation.psycopg2 import Psycopg2Instrumentor
 from opentelemetry.instrumentation.redis import RedisInstrumentor
 from opentelemetry.instrumentation.celery import CeleryInstrumentor
 from opentelemetry.propagate import set_global_textmap
-from opentelemetry.propagators.w3c import W3CTraceContextPropagator
+# Note: don't import TraceContextTextMapPropagator at module import time because
+# some opentelemetry distributions may lack that module. Import it lazily
+# inside setup_tracing and fall back to the default propagator if unavailable.
 
 # Context variables for request-scoped data
 request_id_var: ContextVar[Optional[str]] = ContextVar('request_id', default=None)
@@ -148,19 +150,24 @@ def setup_tracing(app: Flask, config: ObservabilityConfig) -> None:
         # Add span processor
         span_processor = BatchSpanProcessor(otlp_exporter)
         trace.get_tracer_provider().add_span_processor(span_processor)
-        
-        # Set global propagator
-        set_global_textmap(W3CTraceContextPropagator())
-        
+
+        # Set global propagator (try to import TraceContextTextMapPropagator,
+        # otherwise keep whatever default propagator is configured)
+        try:
+            from opentelemetry.propagators.tracecontext import TraceContextTextMapPropagator
+            set_global_textmap(TraceContextTextMapPropagator())
+        except Exception:
+            app.logger.warning("TraceContextTextMapPropagator not available; using default propagator")
+
         # Instrument libraries
         FlaskInstrumentor().instrument_app(app)
         RequestsInstrumentor().instrument()
         Psycopg2Instrumentor().instrument()
         RedisInstrumentor().instrument()
         CeleryInstrumentor().instrument()
-        
+
         app.logger.info(f"Tracing initialized for service '{config.otel_service_name}' to {config.otel_exporter_endpoint}")
-        
+
     except Exception as e:
         app.logger.error(f"Failed to initialize tracing: {e}")
         # Don't fail the app if tracing setup fails
@@ -173,36 +180,55 @@ def setup_metrics(app: Flask, config: ObservabilityConfig) -> PrometheusMetrics:
     metrics = PrometheusMetrics(app)
     
     # Configure HTTP request histogram with appropriate buckets for web applications
-    metrics.info('app_info', 'Application info', version='8.0.0', environment=config.app_env)
+    # Guard against duplicate registration when the module is imported multiple times
+    try:
+        metrics.info('app_info', 'Application info', version='8.0.0', environment=config.app_env)
+    except ValueError:
+        # Collector already registered (possible when Celery autodiscovers tasks/imports module multiple times)
+        app.logger.debug("Prometheus metric 'app_info' already registered; skipping duplicate registration")
     
     # Custom histogram for request latency (override default)
     histogram_buckets = [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2, 5]
     
-    # Register custom histogram with proper labels
+    # Register custom histogram with proper labels (all label values should be callables)
     request_duration_histogram = metrics.histogram(
         'http_request_duration_seconds',
         'HTTP request latency',
         labels={
             'method': lambda: request.method if request else 'unknown',
             'endpoint': lambda: request.endpoint if request else 'unknown',
-            'status': lambda: getattr(g, 'status_code', 'unknown'),
-            'environment': config.app_env
+            'status': lambda: str(getattr(g, 'status_code', 'unknown')),
+            'environment': lambda: config.app_env,
         },
         buckets=histogram_buckets
     )
-    
-    # Add background job metrics
-    job_counter = metrics.counter(
-        'background_jobs_total',
-        'Total background jobs',
-        labels=['status', 'job_type']
-    )
-    
-    job_gauge = metrics.gauge(
-        'background_jobs_active',
-        'Active background jobs',
-        labels=['job_type']
-    )
+
+    # Add background job metrics - labels must be a dict of callables according to prometheus_flask_exporter
+    try:
+        job_counter = metrics.counter(
+            'background_jobs_total',
+            'Total background jobs',
+            labels={
+                'status': lambda: str(getattr(g, 'status_code', 'unknown')),
+                'job_type': lambda: 'unknown'
+            }
+        )
+    except TypeError:
+        # Fallback: register without labels if the exporter version behaves differently
+        app.logger.debug("Failed to register job_counter with labels; registering without labels")
+        job_counter = metrics.counter('background_jobs_total', 'Total background jobs')
+
+    try:
+        job_gauge = metrics.gauge(
+            'background_jobs_active',
+            'Active background jobs',
+            labels={
+                'job_type': lambda: 'unknown'
+            }
+        )
+    except TypeError:
+        app.logger.debug("Failed to register job_gauge with labels; registering without labels")
+        job_gauge = metrics.gauge('background_jobs_active', 'Active background jobs')
     
     app.logger.info("Prometheus metrics initialized")
     

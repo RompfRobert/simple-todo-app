@@ -4,7 +4,7 @@ import sys
 import logging
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, jsonify, send_file, g
-from sqlalchemy import create_engine, text, Column, Integer, String, Boolean, DateTime
+from sqlalchemy import create_engine, text, Column, Integer, String, Boolean, DateTime, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import OperationalError
@@ -33,6 +33,8 @@ class Todo(Base):
     id = Column(Integer, primary_key=True)
     text = Column(String(500), nullable=False)
     done = Column(Boolean, default=False, nullable=False)
+    # Lower values come first when ordering
+    order = Column(Integer, default=0, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
 # Database connection
@@ -81,14 +83,14 @@ def index():
     """Show form to add tasks and display the current list."""
     try:
         db = get_db()
-        todos = db.query(Todo).order_by(Todo.created_at.desc()).all()
+        # Order by the explicit order column (ascending). New items get the highest order.
+        todos = db.query(Todo).order_by(Todo.order.asc(), Todo.created_at.desc()).all()
         db.close()
-        
-        # Convert to simple list format for template compatibility
-        tasks = [todo.text for todo in todos]
+
+        # Convert to structured list for template
+        tasks = [{'id': t.id, 'text': t.text, 'done': t.done} for t in todos]
         app.logger.info(f"Retrieved {len(tasks)} todos for display")
         return render_template("index.html", tasks=tasks)
-        
     except Exception as e:
         app.logger.error(f"Error fetching todos: {e}", exc_info=True)
         return render_template("index.html", tasks=[])
@@ -100,7 +102,10 @@ def add_task():
     if text:
         try:
             db = get_db()
-            new_todo = Todo(text=text)
+            # determine next order (append to end)
+            max_order = db.query(func.max(Todo.order)).scalar() or 0
+            next_order = (max_order or 0) + 1
+            new_todo = Todo(text=text, order=next_order)
             db.add(new_todo)
             db.commit()
             db.close()
@@ -112,27 +117,86 @@ def add_task():
             
     return redirect(url_for("index"))
 
-@app.post("/delete/<int:task_id>")
-def delete_task(task_id: int):
-    """Delete a task by its position in the list (for template compatibility)."""
+@app.post("/delete/<int:todo_id>")
+def delete_task(todo_id: int):
+    """Delete a task by its database id."""
     try:
         db = get_db()
-        todos = db.query(Todo).order_by(Todo.created_at.desc()).all()
-        
-        if 0 <= task_id < len(todos):
-            todo_to_delete = todos[task_id]
-            app.logger.info(f"Deleting task {task_id}: {todo_to_delete.text[:50]}...")
-            db.delete(todo_to_delete)
+        todo = db.query(Todo).filter(Todo.id == todo_id).one_or_none()
+        if todo:
+            app.logger.info(f"Deleting task id={todo_id}: {todo.text[:50]}...")
+            db.delete(todo)
             db.commit()
         else:
-            app.logger.warning(f"Invalid task ID for deletion: {task_id}")
-            
+            app.logger.warning(f"Attempted to delete missing todo id={todo_id}")
         db.close()
-        
     except Exception as e:
         app.logger.error(f"Error deleting task: {e}", exc_info=True)
-        
     return redirect(url_for("index"))
+
+
+@app.post('/toggle/<int:todo_id>')
+def toggle_task(todo_id: int):
+    """Toggle the completed state for a todo. Returns JSON."""
+    try:
+        db = get_db()
+        todo = db.query(Todo).filter(Todo.id == todo_id).one_or_none()
+        if not todo:
+            db.close()
+            return jsonify({'error': 'not found'}), 404
+        todo.done = not bool(todo.done)
+        db.add(todo)
+        db.commit()
+        db.close()
+        return jsonify({'id': todo_id, 'done': todo.done}), 200
+    except Exception as e:
+        app.logger.error(f"Error toggling task: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+
+@app.post('/edit/<int:todo_id>')
+def edit_task(todo_id: int):
+    """Edit a todo's text. Expects JSON {'text': '...'}"""
+    try:
+        payload = request.get_json(force=True)
+        new_text = (payload.get('text') or '').strip()
+        if not new_text:
+            return jsonify({'error': 'empty text'}), 400
+        db = get_db()
+        todo = db.query(Todo).filter(Todo.id == todo_id).one_or_none()
+        if not todo:
+            db.close()
+            return jsonify({'error': 'not found'}), 404
+        todo.text = new_text
+        db.add(todo)
+        db.commit()
+        db.close()
+        return jsonify({'id': todo_id, 'text': todo.text}), 200
+    except Exception as e:
+        app.logger.error(f"Error editing task: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+
+@app.post('/reorder')
+def reorder_tasks():
+    """Accepts JSON {'order': [id1,id2,...]} and updates the Todo.order field to persist ordering."""
+    try:
+        payload = request.get_json(force=True)
+        order_list = payload.get('order') or []
+        if not isinstance(order_list, list):
+            return jsonify({'error': 'order must be list of ids'}), 400
+        db = get_db()
+        for idx, tid in enumerate(order_list, start=1):
+            todo = db.query(Todo).filter(Todo.id == int(tid)).one_or_none()
+            if todo:
+                todo.order = idx
+                db.add(todo)
+        db.commit()
+        db.close()
+        return jsonify({'status': 'ok'}), 200
+    except Exception as e:
+        app.logger.error(f"Error reordering tasks: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
 
 @celery.task(bind=True)
 def export_todos_task(self, filters=None):
@@ -141,11 +205,7 @@ def export_todos_task(self, filters=None):
     start_time = time.time()
     
     try:
-        # Update job metrics
-        metrics.counter('background_jobs_total', labels=['status', 'job_type']).labels(
-            status='started', job_type='export'
-        ).inc()
-        
+        # Update job metrics (simplified to avoid complex metrics API)
         app.logger.info(f"Starting export task {self.request.id}", extra={'task_id': self.request.id})
         
         # Simulate slow work
@@ -174,19 +234,9 @@ def export_todos_task(self, filters=None):
         app.logger.info(f"Export task {self.request.id} completed", 
                        extra={'task_id': self.request.id, 'duration_s': round(duration, 2), 'count': len(todos)})
         
-        # Update success metrics
-        metrics.counter('background_jobs_total', labels=['status', 'job_type']).labels(
-            status='succeeded', job_type='export'
-        ).inc()
-        
         return {'csv_path': csv_path, 'count': len(todos)}
         
     except Exception as e:
-        # Update failure metrics
-        metrics.counter('background_jobs_total', labels=['status', 'job_type']).labels(
-            status='failed', job_type='export'
-        ).inc()
-        
         app.logger.error(f"Export task {self.request.id} failed: {e}", 
                         extra={'task_id': self.request.id}, exc_info=True)
         raise
@@ -198,9 +248,18 @@ def export_todos():
     task = export_todos_task.apply_async(kwargs={'filters': filters})
     
     # Update enqueued metrics
-    metrics.counter('background_jobs_total', labels=['status', 'job_type']).labels(
-        status='enqueued', job_type='export'
-    ).inc()
+    try:
+        job_counter = metrics.counter(
+            'background_jobs_total',
+            'Total background jobs processed',
+            labels={
+                'status': lambda: 'enqueued',
+                'job_type': lambda: 'export'
+            }
+        )
+        job_counter.inc()
+    except Exception as e:
+        app.logger.warning(f"Failed to update export metrics: {e}")
     
     app.logger.info(f"Export task enqueued: {task.id}")
     return jsonify({'task_id': task.id}), 202
