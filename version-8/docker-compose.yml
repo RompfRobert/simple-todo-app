@@ -31,7 +31,7 @@ services:
         VERSION: "8.0.0"
         BUILD_DATE: ${BUILD_DATE}
         VCS_REF: ${VCS_REF}
-    image: simple-todo:v8
+    image: simple-todo:latest
     # No ports exposed - only accessible through the proxy
     env_file:
       - .env
@@ -62,7 +62,7 @@ services:
     command: ["gunicorn", "--config", "gunicorn.conf.py", "app:app"]
 
   worker:
-    image: simple-todo:v8
+    image: simple-todo:latest
     command: celery -A celery_app.celery worker --concurrency=2 --loglevel=${LOG_LEVEL:-INFO}
     env_file:
       - .env
