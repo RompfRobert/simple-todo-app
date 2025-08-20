@@ -6,9 +6,7 @@ from flask import Flask, render_template, request, redirect, url_for, jsonify, s
 from sqlalchemy import create_engine, text, Column, Integer, String, Boolean, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.exc import OperationalError
 from celery_app import celery
-import tempfile
 import csv
 import redis
 
