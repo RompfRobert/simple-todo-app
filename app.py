@@ -1,15 +1,11 @@
 import json
 import os
-from pathlib import Path
 from flask import Flask, render_template, request, redirect, url_for
 
 app = Flask(__name__)
 
 # Configuration for the JSON file path
 TODO_FILE = os.environ.get("TODO_FILE", "/app/data/todos.json")
-
-# Ensure the parent directory exists on startup
-os.makedirs(os.path.dirname(TODO_FILE), exist_ok=True)
 
 def load_tasks():
     """Load tasks from the JSON file, returning empty list if file doesn't exist."""
@@ -21,7 +17,7 @@ def load_tasks():
 
 def save_tasks(tasks):
     """Save tasks to the JSON file, creating directories if needed."""
-    # Ensure the directory exists (redundant safety check)
+    # Ensure the directory exists
     os.makedirs(os.path.dirname(TODO_FILE), exist_ok=True)
     
     with open(TODO_FILE, 'w') as f:
