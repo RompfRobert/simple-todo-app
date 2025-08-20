@@ -2,15 +2,10 @@ import os
 import signal
 import sys
 from datetime import datetime
-from flask import Flask, render_template, request, redirect, url_for, jsonify, send_file
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 from sqlalchemy import create_engine, text, Column, Integer, String, Boolean, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.exc import OperationalError
-from celery_app import celery
-import tempfile
-import csv
-import redis
 
 app = Flask(__name__)
 
@@ -118,66 +113,6 @@ def delete_task(task_id: int):
         print(f"Error deleting task: {e}")
         
     return redirect(url_for("index"))
-
-@celery.task(bind=True)
-def export_todos_task(self, filters=None):
-    # Simulate slow work
-    import time
-    time.sleep(5)
-    # Query todos from DB (pseudo-code, replace with real query)
-    todos = []  # TODO: fetch from DB, apply filters
-    # For demonstration, create dummy data
-    todos = [
-        {'id': 1, 'title': 'Task 1', 'done': False},
-        {'id': 2, 'title': 'Task 2', 'done': True},
-    ]
-    # Write CSV into a shared exports directory so the web app can serve it
-    export_dir = os.environ.get('EXPORT_DIR', '/app/data/exports')
-    os.makedirs(export_dir, exist_ok=True)
-    csv_path = os.path.join(export_dir, f'todos_export_{self.request.id}.csv')
-    with open(csv_path, 'w', newline='', encoding='utf-8') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=['id', 'title', 'done'])
-        writer.writeheader()
-        for todo in todos:
-            writer.writerow(todo)
-    return {'csv_path': csv_path, 'count': len(todos)}
-
-@app.route('/export', methods=['POST'])
-def export_todos():
-    filters = request.json.get('filters') if request.is_json else None
-    task = export_todos_task.apply_async(kwargs={'filters': filters})
-    return jsonify({'task_id': task.id}), 202
-
-@app.route('/tasks/<task_id>', methods=['GET'])
-def get_task_status(task_id):
-    task = export_todos_task.AsyncResult(task_id)
-    response = {
-        'task_id': task_id,
-        'state': task.state,
-        'info': task.info if task.info else {},
-        'ready': task.ready(),
-        'successful': task.successful(),
-    }
-    return jsonify(response)
-
-@app.route('/download/<task_id>', methods=['GET'])
-def download_csv(task_id):
-    task = export_todos_task.AsyncResult(task_id)
-    if not task.successful():
-        return jsonify({'error': 'Task not completed'}), 404
-    csv_path = task.info.get('csv_path')
-    if not csv_path or not os.path.exists(csv_path):
-        return jsonify({'error': 'CSV not found'}), 404
-    return send_file(csv_path, mimetype='text/csv', as_attachment=True, download_name=f'todos_{task_id}.csv')
-
-@app.route('/healthz/background', methods=['GET'])
-def healthz_background():
-    try:
-        r = redis.Redis.from_url(os.environ['CELERY_BROKER_URL'])
-        r.ping()
-        return jsonify({'redis': 'ok'}), 200
-    except Exception as e:
-        return jsonify({'redis': 'unreachable', 'error': str(e)}), 503
 
 def signal_handler(signum, frame):
     """Handle shutdown signals gracefully."""
