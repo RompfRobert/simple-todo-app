@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Simple To-Do</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="min-h-screen bg-gradient-to-b from-slate-100 via-slate-50 to-slate-100 flex items-center justify-center">
+    <div class="w-full max-w-2xl p-6">
+      <div class="glass p-8 rounded-2xl shadow-xl">
+        <div class="flex items-center justify-between mb-6">
+          <h1 class="text-3xl font-semibold text-slate-800">Simple To-Do</h1>
+          <div class="flex gap-2">
+            <button id="export-btn" type="button" onclick="startExport()" class="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700">Export CSV</button>
+          </div>
+        </div>
+
+        <form id="add-form" class="flex gap-3 mb-6">
+          <input id="new-task" name="task" type="text" placeholder="Add a new task"
+                 class="flex-1 px-4 py-3 rounded-md bg-white/60 backdrop-blur-sm border border-white/30 focus:outline-none" required>
+          <button id="add-btn" type="submit" class="px-4 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700">Add</button>
+        </form>
+
+        <ul id="todo-list" class="space-y-3">
+          {% if tasks %}
+            {% for task in tasks %}
+              <li class="todo-item flex items-center gap-3 p-3 rounded-md bg-white/40 border border-white/30" draggable="true" data-id="{{ task.id }}">
+                <button class="toggle-btn w-9 h-9 rounded-full flex items-center justify-center text-white" aria-label="toggle">
+                  {% if task.done %}
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                  {% else %}
+                    <svg class="w-5 h-5 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  {% endif %}
+                </button>
+
+                <div class="flex-1">
+                  <div class="task-text truncate {{ 'line-through text-slate-400' if task.done else 'text-slate-900' }}" data-id="{{ task.id }}">{{ task.text }}</div>
+                  <input class="edit-input hidden w-full mt-1 px-2 py-1 rounded-md bg-white/80" value="{{ task.text }}" />
+                </div>
+
+                <div class="flex gap-2">
+                  <button class="edit-btn px-2 py-1 text-sm bg-yellow-500 text-white rounded">Edit</button>
+                  <button class="delete-btn px-2 py-1 text-sm bg-red-600 text-white rounded">Delete</button>
+                </div>
+              </li>
+            {% endfor %}
+          {% else %}
+            <li class="p-3 text-slate-600">No tasks yet. Add your first one above.</li>
+          {% endif %}
+        </ul>
+      </div>
+      <div id="export-status" class="mt-4 text-sm text-slate-700 text-center"></div>
+    </div>
+
+    <script>
+      // Helper: POST JSON
+      async function postJSON(url, body) {
+        const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        return res;
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        const list = document.getElementById('todo-list');
+        const addForm = document.getElementById('add-form');
+        const newTaskInput = document.getElementById('new-task');
+
+        // Add item via traditional form submit to keep server-side add endpoint
+        addForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          addForm.querySelector('#add-btn').disabled = true;
+          const text = newTaskInput.value.trim();
+          if (!text) { addForm.querySelector('#add-btn').disabled = false; return; }
+          // Use form submit to server to create entry and refresh
+          const form = document.createElement('form');
+          form.method = 'POST'; form.action = '/add';
+          const inp = document.createElement('input'); inp.type = 'hidden'; inp.name = 'task'; inp.value = text; form.appendChild(inp);
+          document.body.appendChild(form);
+          form.submit();
+        });
+
+        // Toggle and buttons
+        list.querySelectorAll('.todo-item').forEach(item => {
+          const id = item.dataset.id;
+          const toggle = item.querySelector('.toggle-btn');
+          const editBtn = item.querySelector('.edit-btn');
+          const deleteBtn = item.querySelector('.delete-btn');
+          const textEl = item.querySelector('.task-text');
+          const inputEl = item.querySelector('.edit-input');
+
+          toggle.addEventListener('click', async () => {
+            toggle.disabled = true;
+            const r = await postJSON(`/toggle/${id}`, {});
+            if (r.ok) {
+              location.reload();
+            } else {
+              toggle.disabled = false;
+            }
+          });
+
+          deleteBtn.addEventListener('click', async () => {
+            // use form POST to maintain compatibility
+            const f = document.createElement('form'); f.method='POST'; f.action=`/delete/${id}`; document.body.appendChild(f); f.submit();
+          });
+
+          editBtn.addEventListener('click', () => {
+            textEl.classList.add('hidden'); inputEl.classList.remove('hidden'); inputEl.focus();
+          });
+
+          inputEl.addEventListener('blur', async () => {
+            const newText = inputEl.value.trim();
+            inputEl.classList.add('hidden'); textEl.classList.remove('hidden');
+            if (newText && newText !== textEl.textContent.trim()) {
+              await postJSON(`/edit/${id}`, { text: newText });
+              location.reload();
+            }
+          });
+        });
+
+        // Drag-and-drop reordering
+        let dragSrc = null;
+        list.addEventListener('dragstart', (e) => {
+          const li = e.target.closest('.todo-item');
+          if (!li) return;
+          dragSrc = li;
+          li.classList.add('opacity-60');
+          e.dataTransfer.effectAllowed = 'move';
+        });
+        list.addEventListener('dragend', (e) => {
+          if (dragSrc) dragSrc.classList.remove('opacity-60');
+          dragSrc = null;
+        });
+        list.addEventListener('dragover', (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+          const over = e.target.closest('.todo-item');
+          if (!over || over === dragSrc) return;
+          const rect = over.getBoundingClientRect();
+          const after = (e.clientY - rect.top) > (rect.height/2);
+          if (after) over.parentNode.insertBefore(dragSrc, over.nextSibling);
+          else over.parentNode.insertBefore(dragSrc, over);
+        });
+        list.addEventListener('drop', async (e) => {
+          e.preventDefault();
+          // Build new order
+          const ids = Array.from(list.querySelectorAll('.todo-item')).map(li => li.dataset.id);
+          await postJSON('/reorder', { order: ids });
+          location.reload();
+        });
+      });
+
+      async function startExport() {
+        const btn = document.getElementById('export-btn');
+        const status = document.getElementById('export-status');
+        btn.disabled = true;
+        status.textContent = 'Starting export...';
+
+        try {
+          const res = await fetch('/export', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filters: {} }) });
+          if (!res.ok) throw new Error('Export request failed');
+          const data = await res.json();
+          const taskId = data.task_id;
+          status.textContent = 'Export started, task id ' + taskId + '. Waiting for completion...';
+
+          // Poll for status
+          let attempts = 0;
+          while (attempts < 120) {
+            await new Promise(r => setTimeout(r, 1000));
+            const s = await fetch('/tasks/' + taskId);
+            if (!s.ok) { attempts++; continue; }
+            const js = await s.json();
+            status.textContent = 'Task ' + taskId + ' — ' + js.state;
+            if (js.state === 'SUCCESS') {
+              window.location = '/download/' + taskId;
+              status.textContent = 'Download starting...';
+              break;
+            }
+            if (js.state === 'FAILURE') {
+              status.textContent = 'Export failed';
+              break;
+            }
+            attempts++;
+          }
+          if (attempts >= 120) status.textContent = 'Export timed out; try again later.';
+
+        } catch (err) {
+          status.textContent = 'Export error: ' + err.message;
+        } finally {
+          btn.disabled = false;
+        }
+      }
+    </script>
+  </body>
+</html>
