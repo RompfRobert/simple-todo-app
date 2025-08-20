@@ -6,7 +6,7 @@ FROM python:slim AS builder
 WORKDIR /build
 
 # Copy requirements first to leverage Docker layer caching
-COPY ../requirements.txt .
+COPY requirements.txt .
 
 # Build wheels for all dependencies
 RUN pip wheel -r requirements.txt -w /wheels
@@ -22,7 +22,7 @@ WORKDIR /app
 
 # Copy wheels from builder stage
 COPY --from=builder /wheels /wheels
-COPY ../requirements.txt .
+COPY requirements.txt .
 
 # Install dependencies from pre-built wheels
 RUN pip install --no-cache-dir --no-compile -r requirements.txt \

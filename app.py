@@ -1,6 +1,5 @@
 import json
 import os
-from pathlib import Path
 from flask import Flask, render_template, request, redirect, url_for
 
 app = Flask(__name__)
@@ -56,6 +55,7 @@ def delete_task(task_id: int):
     return redirect(url_for("index"))
 
 
+# Only run the development server when called directly
 if __name__ == "__main__":
-    # Run Flask's built-in development server
+    # Run Flask's built-in development server (only for local development)
     app.run(debug=True, host="0.0.0.0", port=5000)
