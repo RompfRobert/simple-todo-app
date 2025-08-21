@@ -17,19 +17,19 @@ FROM python:slim AS production
 # Build arguments for OCI labels
 ARG BUILD_DATE
 ARG VCS_REF
-ARG VERSION=8.0.0
+ARG VERSION=9.0.0
 
 # OCI Image Labels for metadata
 LABEL org.opencontainers.image.title="Simple Todo App" \
       org.opencontainers.image.description="Production-ready Flask Todo application with PostgreSQL backend" \
       org.opencontainers.image.version="${VERSION}" \
       org.opencontainers.image.revision="${VCS_REF}" \
-      org.opencontainers.image.url="https://github.com/robertrompf/simple-todo-app" \
-      org.opencontainers.image.source="https://github.com/robertrompf/simple-todo-app" \
+      org.opencontainers.image.url="https://github.com/RompfRobert/simple-todo-app" \
+      org.opencontainers.image.source="https://github.com/RompfRobert/simple-todo-app" \
       org.opencontainers.image.licenses="GPL-3.0" \
       org.opencontainers.image.created="${BUILD_DATE}" \
       org.opencontainers.image.authors="Robert Rompf <robert@rompf.dev>" \
-      org.opencontainers.image.documentation="https://github.com/robertrompf/simple-todo-app/blob/main/README.md"
+      org.opencontainers.image.documentation="https://github.com/RompfRobert/simple-todo-app/blob/main/README.md"
 
 # Environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \

@@ -1,8 +1,8 @@
-# Simple Todo App - Version 8
+# Simple Todo App - Version 9
 
-A production-ready Flask todo application with comprehensive observability: structured JSON logging, Prometheus metrics, and OpenTelemetry distributed tracing.
+A production-ready Flask todo application with comprehensive observability and automated CI/CD pipeline: structured JSON logging, Prometheus metrics, OpenTelemetry distributed tracing, and multi-architecture Docker builds.
 
-This is **Version 8** of a learning project that builds on **v7** by implementing **enterprise-grade observability** with structured logging, metrics collection, and distributed tracing.
+This is **Version 9** of a learning project that builds on **v8** by implementing **enterprise-grade CI/CD automation** with multi-architecture Docker builds, automated Docker Hub publishing, SBOM generation, and security scanning.
 
 ## Features
 
@@ -13,19 +13,27 @@ This is **Version 8** of a learning project that builds on **v7** by implementin
 - Caddy reverse proxy with static file serving
 - Docker multi-stage builds with security hardening
 
-### Observability (New in v8)
+### Observability (v8)
 
 - **Structured JSON Logging**: All logs output as JSON to stdout/stderr with correlation IDs
 - **Prometheus Metrics**: HTTP request histograms, background job counters, and application metrics
 - **Distributed Tracing**: Optional OpenTelemetry tracing with Jaeger backend
 - **Request Correlation**: Request IDs and trace IDs propagated through logs and responses
 
+### CI/CD Automation (New in v9)
+
+- **Multi-Architecture Builds**: Automated builds for `linux/amd64` and `linux/arm64` platforms
+- **Docker Hub Publishing**: Automatic image publishing on main branch commits
+- **Security Scanning**: SBOM generation and vulnerability scanning with Trivy
+- **Pull Request Testing**: Build validation on pull requests
+- **Build Caching**: Optimized builds using GitHub Actions cache
+
 ## Quick Start
 
 1. **Clone and setup**:
 
    ```bash
-   cd version-8
+   cd version-9
    cp .env.example .env
    ```
 
@@ -288,6 +296,65 @@ python app.py
    # Check for traceparent header in response
    # View traces in Jaeger UI at http://localhost:16686
    ```
+
+## CI/CD Pipeline
+
+### Overview
+
+This project includes a complete CI/CD pipeline using GitHub Actions that:
+
+- **Multi-Architecture Builds**: Builds Docker images for both `linux/amd64` and `linux/arm64` platforms
+- **Automated Publishing**: Pushes images to Docker Hub with the `latest` tag on main branch commits
+- **Security Scanning**: Generates Software Bill of Materials (SBOM) and vulnerability reports
+- **Pull Request Testing**: Builds and tests on pull requests without publishing
+
+### Workflow Triggers
+
+- **Push to `master` branch**: Builds, pushes to Docker Hub, generates SBOM, and runs security scans
+- **Pull Requests**: Builds and tests the image without publishing
+
+### Required Secrets
+
+The following secrets must be configured in your GitHub repository settings:
+
+| Secret | Description |
+|--------|-------------|
+| `DOCKERHUB_USERNAME` | Your Docker Hub username |
+| `DOCKERHUB_TOKEN` | Docker Hub access token (recommended over password) |
+
+**Setting up secrets**:
+1. Go to your repository → Settings → Secrets and variables → Actions
+2. Click "New repository secret"
+3. Add both `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`
+
+### Docker Hub Access
+
+Once the CI pipeline runs successfully, the latest image will always be available at:
+
+```bash
+docker pull rompfrobert/simple-todo-app:latest
+```
+
+### Pipeline Outputs
+
+- **Docker Image**: Multi-arch image pushed to `rompfrobert/simple-todo-app:latest`
+- **SBOM Artifact**: Software Bill of Materials in SPDX JSON format (30-day retention)
+- **Security Scan**: Vulnerability report uploaded to GitHub Security tab
+
+### Local Testing
+
+To test the multi-arch build locally:
+
+```bash
+# Set up buildx if not already configured
+docker buildx create --use
+
+# Build for multiple architectures
+docker buildx build --platform linux/amd64,linux/arm64 -t simple-todo-app:test .
+
+# Build and load for current platform
+docker buildx build --load -t simple-todo-app:test .
+```
 
 ## Troubleshooting
 
