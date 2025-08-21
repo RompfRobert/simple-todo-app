@@ -7,18 +7,22 @@ This is **Version 9** of a progressive learning project that builds on **Version
 ## 🎯 Learning Objectives: What Version 9 Teaches
 
 ### From Manual to Automated (v8 → v9)
+
 - **v8**: Manual `docker build` and `docker push` commands
 - **v9**: Fully automated GitHub Actions pipeline that builds and publishes on every commit
 
 ### From Single Architecture to Multi-Platform
+
 - **v8**: Images built for your development machine's architecture only
 - **v9**: Universal images supporting both `linux/amd64` (Intel/AMD) and `linux/arm64` (Apple Silicon, ARM servers)
 
 ### From Basic Images to Secure Supply Chain
+
 - **v8**: Basic Docker images with minimal metadata
 - **v9**: Images with comprehensive metadata, SBOM generation, and vulnerability scanning
 
 ### Key Learning Topics Covered
+
 1. **GitHub Actions Workflows**: Understanding CI/CD pipeline automation
 2. **Multi-Architecture Builds**: Using Docker Buildx for universal container images
 3. **Container Registries**: Automated publishing to Docker Hub
@@ -29,18 +33,21 @@ This is **Version 9** of a progressive learning project that builds on **Version
 ## 🚀 Features by Version
 
 ### Core Application (All Versions)
+
 - Flask web application with PostgreSQL database
 - Celery background tasks with Redis broker
 - Caddy reverse proxy with static file serving
 - Docker multi-stage builds with security hardening
 
 ### Observability Stack (Added in v8)
+
 - **Structured JSON Logging**: All logs output as JSON with correlation IDs
 - **Prometheus Metrics**: HTTP request histograms and background job counters
 - **Distributed Tracing**: Optional OpenTelemetry tracing with Jaeger backend
 - **Request Correlation**: Request IDs and trace IDs propagated through logs
 
 ### CI/CD & Supply Chain Security (New in v9)
+
 - **🤖 Automated Builds**: GitHub Actions pipeline triggered on every commit
 - **🌍 Multi-Architecture Support**: Universal images for Intel, AMD, and ARM platforms
 - **📦 Automated Publishing**: Direct deployment to Docker Hub with `latest` tag
@@ -52,6 +59,7 @@ This is **Version 9** of a progressive learning project that builds on **Version
 ## 🚀 Quick Start
 
 ### Option 1: Use Pre-built Image (Recommended)
+
 ```bash
 # Pull the latest multi-arch image from Docker Hub
 docker pull rompfrobert/simple-todo-app:latest
@@ -68,6 +76,7 @@ docker compose up -d
 ```
 
 ### Option 2: Build Locally
+
 ```bash
 # Clone and setup
 git clone https://github.com/RompfRobert/simple-todo-app.git
@@ -79,11 +88,13 @@ docker compose up -d --build
 ```
 
 ### Verify the Services
-- **Application**: http://localhost
-- **Prometheus Metrics**: http://localhost:9090
-- **Jaeger Tracing UI**: http://localhost:16686
+
+- **Application**: <http://localhost>
+- **Prometheus Metrics**: <http://localhost:9090>
+- **Jaeger Tracing UI**: <http://localhost:16686>
 
 ### Test the Application
+
 ```bash
 # Add some todos
 curl -X POST http://localhost/add -d "task=Learn Docker CI/CD" -H "Content-Type: application/x-www-form-urlencoded"
@@ -101,6 +112,7 @@ curl http://localhost/healthz
 ### What is CI/CD and Why Do We Need It?
 
 In **Version 8**, we manually built and pushed our Docker images:
+
 ```bash
 # Manual process (v8)
 docker build -t my-app .
@@ -108,6 +120,7 @@ docker push my-registry/my-app:latest
 ```
 
 **Problems with manual deployment:**
+
 - 🚫 Prone to human error ("Did I forget to push?")
 - 🚫 Inconsistent builds across team members
 - 🚫 Only builds for your local machine's architecture
@@ -115,6 +128,7 @@ docker push my-registry/my-app:latest
 - 🚫 No visibility into what's in your images (security)
 
 **Version 9 Solution - Automated CI/CD:**
+
 - ✅ Every commit automatically builds and tests
 - ✅ Consistent builds regardless of developer machine
 - ✅ Multi-architecture support (Intel, AMD, ARM)
@@ -124,15 +138,19 @@ docker push my-registry/my-app:latest
 ### Key Concepts Learned
 
 #### 1. **Multi-Architecture Builds**
+
 ```yaml
 platforms: linux/amd64,linux/arm64  # Universal images
 ```
+
 **Why this matters:**
+
 - Your teammates using Apple Silicon (M1/M2) can run the same image
 - Production servers running ARM (cost-effective) work seamlessly
 - Cloud providers offering ARM instances (AWS Graviton) are supported
 
 #### 2. **GitHub Actions Workflow**
+
 ```yaml
 on:
   push:
@@ -140,28 +158,36 @@ on:
   pull_request:
     branches: [master]     # Test on pull requests
 ```
+
 **Learning points:**
+
 - Understand event-driven automation
 - Different actions for different triggers
 - Environment-specific behavior (PR vs production)
 
 #### 3. **Software Bill of Materials (SBOM)**
+
 ```yaml
 - name: Generate SBOM
   uses: anchore/sbom-action@v0
 ```
+
 **Why SBOMs are critical:**
+
 - Know exactly what's in your container images
 - Track dependencies for security vulnerabilities
 - Compliance requirements in enterprise environments
 - Supply chain attack prevention
 
 #### 4. **Container Security Scanning**
+
 ```yaml
 - name: Run Trivy vulnerability scanner
   uses: aquasecurity/trivy-action@master
 ```
+
 **Security best practices:**
+
 - Automated vulnerability detection
 - Integration with GitHub Security tab
 - Catch security issues before deployment
@@ -170,6 +196,7 @@ on:
 ### Hands-On Learning Exercises
 
 #### Exercise 1: Compare Architectures
+
 ```bash
 # Pull the multi-arch image
 docker pull rompfrobert/simple-todo-app:latest
@@ -183,14 +210,17 @@ docker buildx build --platform linux/arm64 -t local-arm64 .
 ```
 
 #### Exercise 2: Explore the SBOM
+
 1. Go to the GitHub Actions run
 2. Download the SBOM artifact
 3. Open the JSON file and explore:
+
    ```bash
    cat sbom.spdx.json | jq '.packages[].name' | head -20
    ```
 
 #### Exercise 3: Security Scanning
+
 1. Check the GitHub Security tab in your repository
 2. Review the Trivy scan results
 3. Understand the vulnerability reports
@@ -307,7 +337,7 @@ curl -X POST http://localhost/export -H "Content-Type: application/json" -d '{}'
 
 ## Architecture
 
-```
+```text
 ┌─────────────┐    ┌──────────────┐    ┌─────────────┐
 │   Browser   │───▶│    Caddy     │───▶│  Flask App  │
 └─────────────┘    │  (Proxy)     │    │   (Web)     │
@@ -478,6 +508,7 @@ Before the pipeline can work, configure these secrets in your repository:
 | `DOCKERHUB_TOKEN` | Docker Hub access token | Docker Hub → Account Settings → Security → Access Tokens |
 
 **Setup Steps:**
+
 1. Go to your repository → Settings → Secrets and variables → Actions
 2. Click "New repository secret"  
 3. Add both secrets with the values above
@@ -546,30 +577,35 @@ docker buildx build \
 Version 9 establishes a solid foundation for enterprise-grade container deployment. Here are natural next steps to continue learning:
 
 ### Advanced CI/CD Concepts
+
 - **Semantic Versioning**: Automated version tagging based on commit messages
 - **Blue-Green Deployments**: Zero-downtime deployment strategies  
 - **Canary Releases**: Gradual rollout to minimize risk
 - **Rollback Strategies**: Automated rollback on deployment failures
 
 ### Container Orchestration
+
 - **Kubernetes Deployment**: Moving beyond docker-compose to K8s
 - **Helm Charts**: Package management for Kubernetes applications
 - **Ingress Controllers**: Advanced routing and load balancing
 - **Pod Autoscaling**: Automatic scaling based on metrics
 
 ### Advanced Security
+
 - **Image Signing**: Cosign for cryptographic verification
 - **Admission Controllers**: Policy enforcement in Kubernetes
 - **Runtime Security**: Falco for runtime threat detection
 - **Secret Management**: HashiCorp Vault integration
 
 ### Monitoring & Observability
+
 - **Infrastructure Monitoring**: Node Exporter, cAdvisor
 - **Log Aggregation**: ELK/EFK stack for centralized logging
 - **Alert Management**: AlertManager with PagerDuty/Slack
 - **Service Mesh**: Istio for advanced observability
 
 ### Performance & Reliability
+
 - **Load Testing**: Automated performance testing in CI
 - **Chaos Engineering**: Resilience testing with Chaos Monkey
 - **Database Migrations**: Zero-downtime schema changes
@@ -631,6 +667,7 @@ curl http://localhost:16686/
 ## 📝 Version 9 Summary: Key Takeaways
 
 ### What We Built
+
 ✅ **Automated CI/CD Pipeline** - No more manual builds and pushes  
 ✅ **Multi-Architecture Support** - Works on Intel, AMD, and ARM processors  
 ✅ **Supply Chain Security** - SBOM generation and vulnerability scanning  
@@ -638,6 +675,7 @@ curl http://localhost:16686/
 ✅ **Security Integration** - GitHub Security tab for vulnerability tracking  
 
 ### What We Learned
+
 🎓 **Docker Buildx** - Multi-platform container builds  
 🎓 **GitHub Actions** - Event-driven automation and workflows  
 🎓 **Container Registries** - Automated publishing and distribution  
@@ -645,6 +683,7 @@ curl http://localhost:16686/
 🎓 **DevSecOps** - Integrating security into the development pipeline  
 
 ### Why This Matters
+
 🌟 **Team Collaboration** - Everyone gets the same image regardless of their machine  
 🌟 **Production Reliability** - Consistent, tested builds every time  
 🌟 **Security Compliance** - Automated vulnerability detection and SBOM generation  
