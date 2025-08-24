@@ -20,7 +20,19 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
-from opentelemetry.instrumentation.psycopg2 import Psycopg2Instrumentor
+try:
+    # Prefer psycopg (psycopg3) instrumentation when available
+    from opentelemetry.instrumentation.psycopg import PsycopgInstrumentor  # type: ignore
+    _HAS_PSYCOPG3 = True
+except Exception:
+    _HAS_PSYCOPG3 = False
+
+try:
+    # Fall back to psycopg2 instrumentation if psycopg3 instrumentation isn't present
+    from opentelemetry.instrumentation.psycopg2 import Psycopg2Instrumentor  # type: ignore
+    _HAS_PSYCOPG2 = True
+except Exception:
+    _HAS_PSYCOPG2 = False
 from opentelemetry.instrumentation.redis import RedisInstrumentor
 from opentelemetry.instrumentation.celery import CeleryInstrumentor
 from opentelemetry.propagate import set_global_textmap
@@ -161,7 +173,22 @@ def setup_tracing(app: Flask, config: ObservabilityConfig) -> None:
         # Instrument libraries
         FlaskInstrumentor().instrument_app(app)
         RequestsInstrumentor().instrument()
-        Psycopg2Instrumentor().instrument()
+        # Instrument DB driver if available (prefer psycopg3/psycopg, else psycopg2)
+        if _HAS_PSYCOPG3:
+            try:
+                PsycopgInstrumentor().instrument()
+                app.logger.info("Instrumented psycopg (psycopg3)")
+            except Exception as e:
+                app.logger.warning(f"Failed to instrument psycopg: {e}")
+        elif _HAS_PSYCOPG2:
+            try:
+                Psycopg2Instrumentor().instrument()
+                app.logger.info("Instrumented psycopg2")
+            except Exception as e:
+                app.logger.warning(f"Failed to instrument psycopg2: {e}")
+        else:
+            app.logger.info("No psycopg instrumentation available; skipping DB instrumentation")
+
         RedisInstrumentor().instrument()
         CeleryInstrumentor().instrument()
 

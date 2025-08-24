@@ -24,6 +24,9 @@ vine==5.1.0
 wcwidth==0.2.13
 Werkzeug==3.1.3
 
+# PostgreSQL driver: use modern psycopg (psycopg3) with binary wheels when available
+psycopg[binary]
+
 # Observability packages - version 8
 python-json-logger==2.0.7
 prometheus-flask-exporter==0.23.2
@@ -31,7 +34,8 @@ opentelemetry-api==1.27.0
 opentelemetry-sdk==1.27.0
 opentelemetry-instrumentation-flask==0.48b0
 opentelemetry-instrumentation-requests==0.48b0
-opentelemetry-instrumentation-psycopg2==0.48b0
+# psycopg2-specific instrumentation removed; observability will attempt instrumentation
+# for psycopg if available at runtime. Keep other instrumentation packages.
 opentelemetry-instrumentation-redis==0.48b0
 opentelemetry-instrumentation-celery==0.48b0
 opentelemetry-exporter-otlp==1.27.0

@@ -8,6 +8,14 @@ WORKDIR /build
 # Copy requirements first to leverage Docker layer caching
 COPY requirements.txt .
 
+# Install build dependencies needed for some packages (psycopg2, etc.)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        build-essential \
+        libpq-dev \
+        python3-dev && \
+    rm -rf /var/lib/apt/lists/*
+
 # Build wheels for all dependencies
 RUN pip wheel -r requirements.txt -w /wheels
 

@@ -20,7 +20,7 @@ app = Flask(__name__)
 obs_config, metrics = init_observability(app)
 
 # Database configuration
-DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql+psycopg2://todos:todos123@localhost:5432/todos")
+DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql+psycopg://todos:todos123@localhost:5432/todos")
 
 # SQLAlchemy setup
 Base = declarative_base()
